@@ -61,7 +61,7 @@ function App() {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           />
 
-          {/* Render markers for each filtered hawker centre [cite: 127, 128] */}
+          {/* Render markers for each filtered hawker centre [cite: 127, 128] */} 
           {filteredHawkers.map((hawker, index) => {
             const coords = hawker.geometry?.coordinates || [hawker.latitude, hawker.longitude];
             // Leaflet expects [lat, lng], GeoJSON often uses [lng, lat]
@@ -72,8 +72,8 @@ function App() {
                 <Popup>
                   <div className="p-1">
                     <h2 className="font-bold text-lg border-b mb-1">{hawker.properties?.NAME || hawker.name}</h2>
-                    <p className="text-sm text-gray-600"><strong>Address:</strong> {hawker.properties?.ADDRESS || hawker.address}</p>
-                    <p className="text-sm text-gray-600"><strong>Postal Code:</strong> {hawker.properties?.POSTAL_CODE || hawker.postal_code}</p>
+                      <p className="text-sm text-gray-600"><strong>Address:</strong> {hawker.properties?.ADDRESS_MYENV}</p>
+                      <p className="text-sm text-gray-600"><strong>Postal Code:</strong> {hawker.properties?.ADDRESSPOSTALCODE}</p>
                   </div>
                 </Popup>
               </Marker>
