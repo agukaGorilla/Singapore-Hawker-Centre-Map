@@ -52,7 +52,11 @@ function App() {
             const finalAddress = props.ADDRESS_MYENV || (props.ADDRESSBLOCKHOUSENUMBER || props.ADDRESSSTREETNAME ? `${props.ADDRESSBLOCKHOUSENUMBER || ""} ${props.ADDRESSSTREETNAME || ""}` : "Address not available");
 
             return (
-              <Marker key={index} position={position}>
+              <Marker key={index} position={position}
+              eventHandlers={{
+                mouseover: (e) => e.target.openPopup(),
+                mouseout: (e) => e.target.closePopup(),
+                }}>
                 <Popup>
                   <div className="p-1 w-48">
                     {/* FIXED: Photo logic now correctly uses 'props' inside the loop */}
