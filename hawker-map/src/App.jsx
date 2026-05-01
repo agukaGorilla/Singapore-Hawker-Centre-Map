@@ -33,10 +33,12 @@ function App() {
     const props = item.properties || {};
     const name = props.NAME || item.name || "";
     const postal = props.ADDRESSPOSTALCODE || item.postal_code || "";
+    const address = props.ADDRESS_MYENV || "";
     const term = searchTerm.toLowerCase();
 
     return name.toLowerCase().includes(term) || 
-           postal.toLowerCase().includes(term);
+           postal.toLowerCase().includes(term) ||
+           address.toLowerCase().includes(term);
   });
 
   return (
@@ -46,7 +48,7 @@ function App() {
         <h1 className="text-xl font-bold text-gray-800 mb-2">Singapore Hawker Centre Explorer</h1>
         <input
           type="text"
-          placeholder="Search by name (e.g. Maxwell, Amoy)..."
+          placeholder="Search by name, address, or postal code (e.g., Maxwell, 069184)..."
           className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           onChange={(e) => setSearchTerm(e.target.value)}
         />
