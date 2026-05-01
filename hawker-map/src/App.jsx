@@ -1,5 +1,5 @@
+import { MapContainer, TileLayer, Marker, Tooltip } from 'react-leaflet';
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
@@ -52,24 +52,20 @@ function App() {
             const finalAddress = props.ADDRESS_MYENV || (props.ADDRESSBLOCKHOUSENUMBER || props.ADDRESSSTREETNAME ? `${props.ADDRESSBLOCKHOUSENUMBER || ""} ${props.ADDRESSSTREETNAME || ""}` : "Address not available");
 
             return (
-              <Marker key={index} position={position}
-              eventHandlers={{
-                mouseover: (e) => e.target.openPopup(),
-                mouseout: (e) => e.target.closePopup(),
-                }}>
-                <Popup>
-                  <div className="p-1 w-48">
-                    {/* FIXED: Photo logic now correctly uses 'props' inside the loop */}
-                    {props.PHOTOURL && (
-                      <img src={props.PHOTOURL} alt={props.NAME} className="w-full h-32 object-cover rounded mb-2 shadow-sm" />
-                    )}
-                    <h2 className="font-bold text-base border-b pb-1 mb-1 leading-tight text-gray-800">{props.NAME || hawker.name}</h2>
-                    <p className="text-xs text-gray-700 mb-1 leading-snug"><strong>Address:</strong> {finalAddress}</p>
-                    <p className="text-xs text-gray-700 mb-1"><strong>Postal Code:</strong> {props.ADDRESSPOSTALCODE || hawker.postal_code}</p>
-                    <p className="text-xs text-gray-700"><strong>Food Stalls:</strong> <span className="bg-blue-100 text-blue-800 py-0.5 px-1.5 rounded">{props.NUMBER_OF_COOKED_FOOD_STALLS || 0}</span></p>
-                  </div>
-                </Popup>
-              </Marker>
+              <Marker key={index} position={position}>
+  {/* The Tooltip automatically handles hover without flickering */}
+  <Tooltip direction="top" offset={[0, -20]} opacity={1}>
+    <div className="p-1 w-48">
+      {props.PHOTOURL && (
+        <img src={props.PHOTOURL} alt={props.NAME} className="w-full h-32 object-cover rounded mb-2 shadow-sm" />
+      )}
+      <h2 className="font-bold text-base border-b pb-1 mb-1 leading-tight text-gray-800">{props.NAME || hawker.name}</h2>
+      <p className="text-xs text-gray-700 mb-1 leading-snug"><strong>Address:</strong> {finalAddress}</p>
+      <p className="text-xs text-gray-700 mb-1"><strong>Postal Code:</strong> {props.ADDRESSPOSTALCODE || hawker.postal_code}</p>
+      <p className="text-xs text-gray-700"><strong>Food Stalls:</strong> <span className="bg-blue-100 text-blue-800 py-0.5 px-1.5 rounded">{props.NUMBER_OF_COOKED_FOOD_STALLS || 0}</span></p>
+    </div>
+  </Tooltip>
+</Marker>
             );
           })}
         </MapContainer>
