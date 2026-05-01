@@ -18,21 +18,25 @@ function App() {
   const [hawkers, setHawkers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // 1. Fetch the data from your public folder
+  // 1. Fetch the data from public folder
   useEffect(() => {
     fetch('/hawkers.json')
       .then(res => res.json())
       .then(data => {
-        // Handle both GeoJSON and standard JSON structures
         const records = data.features || data; 
         setHawkers(records);
       });
   }, []);
 
-  // 2. Filter logic for the Search Bar [cite: 141]
+  
   const filteredHawkers = hawkers.filter(item => {
-    const name = item.properties?.NAME || item.name || "";
-    return name.toLowerCase().includes(searchTerm.toLowerCase());
+    const props = item.properties || {};
+    const name = props.NAME || item.name || "";
+    const postal = props.ADDRESSPOSTALCODE || item.postal_code || "";
+    const term = searchTerm.toLowerCase();
+
+    return name.toLowerCase().includes(term) || 
+           postal.toLowerCase().includes(term);
   });
 
   return (
