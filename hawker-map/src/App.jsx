@@ -4,6 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 
 let DefaultIcon = L.icon({
   iconUrl: markerIcon,
@@ -16,6 +17,7 @@ L.Marker.prototype.options.icon = DefaultIcon;
 function App() {
   const [hawkers, setHawkers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedRegion, setSelectedRegion] = useState('All');
 
   useEffect(() => {
     fetch('/hawkers.json')
@@ -35,7 +37,14 @@ function App() {
     
     const term = searchTerm.toLowerCase();
 
-    return name.toLowerCase().includes(term) || postal.toLowerCase().includes(term) || finalAddress.toLowerCase().includes(term);
+    const matchesSearch = name.toLowerCase().includes(term) || 
+      postal.toLowerCase().includes(term) || 
+      finalAddress.toLowerCase().includes(term);
+
+    const matchesRegion = selectedRegion === 'All' || 
+      finalAddress.toLowerCase().includes(selectedRegion.toLowerCase());
+
+    return matchesSearch && matchesRegion;
   });
 
   return (
