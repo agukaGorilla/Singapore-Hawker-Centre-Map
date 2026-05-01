@@ -51,12 +51,27 @@ function App() {
     <div className="h-screen w-screen flex flex-col font-sans bg-gray-100">
       <header className="p-4 bg-white shadow-md sticky top-0 z-[2000]" style={{ zIndex: 2000 }}>
         <h1 className="text-2xl font-bold text-gray-800 mb-2">Singapore Hawker Centre Explorer</h1>
-        <input
-          type="text"
-          placeholder="Search by name, address, or postal code (e.g., Maxwell, 069184)..."
-          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Search by name, address, or postal code..."
+            className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <select 
+            className="p-3 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onChange={(e) => setSelectedRegion(e.target.value)}
+          >
+            <option value="All">All Regions</option>
+            <option value="Ang Mo Kio">Ang Mo Kio</option>
+            <option value="Bedok">Bedok</option>
+            <option value="Bukit Merah">Bukit Merah</option>
+            <option value="Clementi">Clementi</option>
+            <option value="Jurong">Jurong</option>
+            <option value="Tampines">Tampines</option>
+            <option value="Toa Payoh">Toa Payoh</option>
+          </select>
+        </div>
       </header>
 
       <div className="flex-1 relative overflow-hidden">
