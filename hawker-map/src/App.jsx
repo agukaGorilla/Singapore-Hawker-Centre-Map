@@ -1,12 +1,15 @@
-import { MapContainer, TileLayer, Marker, Tooltip } from 'react-leaflet';
 import React, { useState, useEffect } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Tooltip } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
 let DefaultIcon = L.icon({
-    iconUrl: markerIcon, shadowUrl: markerShadow, iconSize: [25, 41], iconAnchor: [12, 41]
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41]
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
@@ -15,17 +18,21 @@ function App() {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    fetch('/hawkers.json').then(res => res.json()).then(data => setHawkers(data.features || data));
+    fetch('/hawkers.json')
+      .then(res => res.json())
+      .then(data => setHawkers(data.features || data));
   }, []);
 
   const filteredHawkers = hawkers.filter(item => {
     const props = item.properties || {};
     const name = props.NAME || item.name || "";
     const postal = props.ADDRESSPOSTALCODE || item.postal_code || "";
+    
     const addressEnv = props.ADDRESS_MYENV;
     const block = props.ADDRESSBLOCKHOUSENUMBER || "";
     const street = props.ADDRESSSTREETNAME || "";
     const finalAddress = addressEnv || (block || street ? `${block} ${street}` : "Address not available");
+    
     const term = searchTerm.toLowerCase();
 
     return name.toLowerCase().includes(term) || postal.toLowerCase().includes(term) || finalAddress.toLowerCase().includes(term);
@@ -33,7 +40,7 @@ function App() {
 
   return (
     <div className="h-screen w-screen flex flex-col font-sans bg-gray-100">
-      <header className="p-4 bg-white shadow-md z-[2000] relative" style={{ backgroundColor: 'white', position: 'relative', zIndex: 2000 }}>
+      <header className="p-4 bg-white shadow-md sticky top-0 z-[2000]" style={{ zIndex: 2000 }}>
         <h1 className="text-2xl font-bold text-gray-800 mb-2">Singapore Hawker Centre Explorer</h1>
         <input
           type="text"
@@ -42,9 +49,11 @@ function App() {
           onChange={(e) => setSearchTerm(e.target.value)}
         />
       </header>
-      <div className="flex-1 relative">
-        <MapContainer center={[1.3521, 103.8198]} zoom={12} className="h-full w-full" style={{ height: "100%", width: "100%" }}>
+
+      <div className="flex-1 relative overflow-hidden">
+        <MapContainer center={[1.3521, 103.8198]} zoom={12} className="h-full w-full" style={{ height: "100%", width: "100%", zIndex: 10 }}>
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap' />
+          
           {filteredHawkers.map((hawker, index) => {
             const coords = hawker.geometry?.coordinates || [hawker.latitude, hawker.longitude];
             const position = hawker.geometry ? [coords[1], coords[0]] : [coords[0], coords[1]];
@@ -53,19 +62,37 @@ function App() {
 
             return (
               <Marker key={index} position={position}>
-  {/* The Tooltip automatically handles hover without flickering */}
-  <Tooltip direction="top" offset={[0, -20]} opacity={1}>
-    <div className="p-1 w-48">
-      {props.PHOTOURL && (
-        <img src={props.PHOTOURL} alt={props.NAME} className="w-full h-32 object-cover rounded mb-2 shadow-sm" />
-      )}
-      <h2 className="font-bold text-base border-b pb-1 mb-1 leading-tight text-gray-800">{props.NAME || hawker.name}</h2>
-      <p className="text-xs text-gray-700 mb-1 leading-snug"><strong>Address:</strong> {finalAddress}</p>
-      <p className="text-xs text-gray-700 mb-1"><strong>Postal Code:</strong> {props.ADDRESSPOSTALCODE || hawker.postal_code}</p>
-      <p className="text-xs text-gray-700"><strong>Food Stalls:</strong> <span className="bg-blue-100 text-blue-800 py-0.5 px-1.5 rounded">{props.NUMBER_OF_COOKED_FOOD_STALLS || 0}</span></p>
-    </div>
-  </Tooltip>
-</Marker>
+                {/* Tooltip for hover - Now contains the FULL info card */}
+                <Tooltip direction="top" offset={[0, -10]} opacity={0.95}>
+                  {/* Added whitespace-normal to override Leaflet's default no-wrap */}
+                  <div className="p-2 w-64 flex flex-col gap-1 overflow-hidden whitespace-normal">
+                    {props.PHOTOURL && (
+                      <img src={props.PHOTOURL} alt={props.NAME || "Hawker Centre"} className="w-full h-32 object-cover rounded mb-1 shadow-sm" />
+                    )}
+                    <h2 className="font-bold text-base border-b pb-1 mb-1 leading-tight text-gray-800 break-words">
+                      {props.NAME || hawker.name}
+                    </h2>
+                    <p className="text-xs text-gray-700 leading-snug break-words"><strong>Address:</strong> {finalAddress}</p>
+                    <p className="text-xs text-gray-700"><strong>Postal Code:</strong> {props.ADDRESSPOSTALCODE || hawker.postal_code}</p>
+                    <p className="text-xs text-gray-700"><strong>Food Stalls:</strong> <span className="bg-blue-100 text-blue-800 py-0.5 px-1.5 rounded">{props.NUMBER_OF_COOKED_FOOD_STALLS || 0}</span></p>
+                  </div>
+                </Tooltip>
+
+                {/* Popup for click - Keeps the card pinned to the screen when clicked */}
+                <Popup maxWidth={280} minWidth={250}>
+                  <div className="p-2 w-64 flex flex-col gap-1 overflow-hidden whitespace-normal">
+                    {props.PHOTOURL && (
+                      <img src={props.PHOTOURL} alt={props.NAME || "Hawker Centre"} className="w-full h-32 object-cover rounded mb-1 shadow-sm" />
+                    )}
+                    <h2 className="font-bold text-base border-b pb-1 mb-1 leading-tight text-gray-800 break-words">
+                      {props.NAME || hawker.name}
+                    </h2>
+                    <p className="text-xs text-gray-700 leading-snug break-words"><strong>Address:</strong> {finalAddress}</p>
+                    <p className="text-xs text-gray-700"><strong>Postal Code:</strong> {props.ADDRESSPOSTALCODE || hawker.postal_code}</p>
+                    <p className="text-xs text-gray-700"><strong>Food Stalls:</strong> <span className="bg-blue-100 text-blue-800 py-0.5 px-1.5 rounded">{props.NUMBER_OF_COOKED_FOOD_STALLS || 0}</span></p>
+                  </div>
+                </Popup>
+              </Marker>
             );
           })}
         </MapContainer>
@@ -73,4 +100,5 @@ function App() {
     </div>
   );
 }
+
 export default App;
