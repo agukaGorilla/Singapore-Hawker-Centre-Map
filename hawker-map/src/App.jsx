@@ -54,6 +54,7 @@ function App() {
           center={[1.3521, 103.8198]}
           zoom={12} 
           className="h-full w-full"
+          style={{height: "80vh", width: "100%"}}
         >
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
