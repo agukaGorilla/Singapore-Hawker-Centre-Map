@@ -51,7 +51,7 @@ function App() {
       {/* The Map Component [cite: 126, 138] */}
       <div className="flex-1 relative">
         <MapContainer 
-          [cite_start]center={[1.3521, 103.8198]} // Centered on Singapore [cite: 157, 158]
+          center={[1.3521, 103.8198]}
           zoom={12} 
           className="h-full w-full"
         >
