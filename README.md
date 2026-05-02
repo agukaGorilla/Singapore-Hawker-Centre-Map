@@ -1,6 +1,7 @@
 # 🗺️ Singapore Hawker Centre Explorer
 
 **Live Demo:** [👉 Click here to view the live app!](https://sghawkerexplorer.netlify.app/)
+*(Note: If the live link is temporarily down due to Netlify's free-tier build limits, please refer to the Local Setup Instructions below to run the app in under a minute!)*
 
 An interactive, data-driven web application designed to visualize and explore Hawker Centres across Singapore. Built with React and Leaflet, this tool goes beyond basic pin-mapping by offering regional segmentation, density visualization, and live statistical tracking.
 
@@ -80,6 +81,10 @@ To run this project locally on your machine:
 4. **Start the development server:**
    ```bash
    npm run dev
+
+5. **Navigate to the link**
+   Open the application and navigate to the provided local link
+   
 
 ## 📊 Data Source
 Data is served locally via hawkers.json in the /public directory to ensure fast, reliable loading times during the assessment evaluation without relying on external API rate limits.
