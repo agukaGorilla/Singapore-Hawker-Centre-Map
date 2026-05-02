@@ -10,13 +10,12 @@ import L from 'leaflet';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
-// Region Coordinates: Corrected to prevent seepage and match your request for 103.75 boundary
 const regionBoundaries = {
   "Central": { color: "#3b82f6", coords: [[1.24, 103.75], [1.35, 103.75], [1.35, 103.87], [1.29, 103.87], [1.24, 103.83]] },
   "East": { color: "#10b981", coords: [[1.29, 103.87], [1.34, 103.87], [1.40, 103.93], [1.40, 104.02], [1.29, 104.02]] },
   "North": { color: "#ef4444", coords: [[1.35, 103.75], [1.48, 103.75], [1.48, 103.87], [1.35, 103.87]] },
   "West": { color: "#f59e0b", coords: [[1.18, 103.60], [1.46, 103.60], [1.46, 103.75], [1.18, 103.75]] },
-  "North-East": { color: "#8b5cf6", coords: [[1.48, 103.87], [1.40, 103.92], [1.34, 103.87], [1.35, 103.87], [1.48, 103.87]] }
+  "North-East": { color: "#8b5cf6", coords: [[1.48, 103.87], [1.40, 103.93], [1.34, 103.87], [1.35, 103.87], [1.48, 103.87]] }
 };
 
 let DefaultIcon = L.icon({ iconUrl: markerIcon, shadowUrl: markerShadow, iconSize: [25, 41], iconAnchor: [12, 41] });
@@ -59,6 +58,10 @@ function App() {
   const [viewMode, setViewMode] = useState('pins'); 
   const [selectedIds, setSelectedIds] = useState([]);
   const [showOnlySelected, setShowOnlySelected] = useState(false);
+  
+  // NEW: State for the Boundaries and Region Toggle
+  const [showBoundaries, setShowBoundaries] = useState(false);
+  const [activeRegions, setActiveRegions] = useState(["South & Central Area", "East Area", "West Area", "North Area", "North-East Area"]);
 
   useEffect(() => {
     fetch('/hawkers.json').then(res => res.json()).then(data => setHawkers(data.features || data));
@@ -97,28 +100,49 @@ function App() {
 
   const toggleSelection = (name) => setSelectedIds(prev => prev.includes(name) ? prev.filter(id => id !== name) : [...prev, name]);
 
+  // NEW: Bulk action for all markers
+  const toggleAllMarkers = () => {
+    if (activeRegions.length === 0) {
+      setActiveRegions(["South & Central Area", "East Area", "West Area", "North Area", "North-East Area"]);
+    } else {
+      setActiveRegions([]);
+    }
+  };
+
   return (
     <div className="h-screen w-screen flex flex-col font-sans bg-gray-100 overflow-hidden text-sm">
       <header className="p-4 bg-white shadow-md sticky top-0 z-[2000] flex flex-col lg:flex-row gap-4 items-center justify-between">
         <div className="flex-1">
           <h1 className="text-xl font-bold text-gray-800 leading-tight">SG Hawker Explorer</h1>
-          <div className="flex gap-3 mt-1">
+          <div className="flex gap-2 mt-1">
             <span className="text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-100 font-bold uppercase">Centres: {stats.total}</span>
-            <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-100 font-bold uppercase">Food Stalls: {stats.stalls}</span>
+            <button 
+              onClick={toggleAllMarkers}
+              className="text-[10px] bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-0.5 rounded border border-gray-300 font-bold uppercase"
+            >
+              {activeRegions.length === 0 ? "Show All Markers" : "Hide All Markers"}
+            </button>
           </div>
         </div>
         
         <div className="flex flex-col sm:flex-row gap-3 items-center">
-          <label className="flex items-center cursor-pointer gap-2 bg-gray-100 px-3 py-2 rounded-lg text-xs font-bold border border-gray-200 shadow-sm">
-            Only Selected
-            <input type="checkbox" checked={showOnlySelected} onChange={(e) => setShowOnlySelected(e.target.checked)} />
-          </label>
+          <div className="flex gap-2 bg-gray-50 p-2 rounded-lg border border-gray-200 shadow-sm">
+            <label className="flex items-center cursor-pointer gap-2 text-xs font-bold text-gray-600">
+              Only Selected
+              <input type="checkbox" checked={showOnlySelected} onChange={(e) => setShowOnlySelected(e.target.checked)} />
+            </label>
+            <div className="w-[1px] h-4 bg-gray-300 mx-1"></div>
+            <label className="flex items-center cursor-pointer gap-2 text-xs font-bold text-gray-600">
+              Region Lines
+              <input type="checkbox" checked={showBoundaries} onChange={(e) => setShowBoundaries(e.target.checked)} />
+            </label>
+          </div>
+
           <input type="text" placeholder="Search by name/postal..." className="w-full sm:w-60 p-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 shadow-sm" disabled={showOnlySelected} onChange={(e) => setSearchTerm(e.target.value)} />
           <select className="p-2 border border-gray-300 rounded-lg bg-white outline-none cursor-pointer font-bold shadow-sm" value={viewMode} onChange={(e) => setViewMode(e.target.value)}>
             <option value="pins">📍 Pins</option>
             <option value="density">🔴 Density</option>
             <option value="cluster">💠 Cluster</option>
-            <option value="regions">🗺️ Regions</option>
           </select>
         </div>
       </header>
@@ -128,19 +152,26 @@ function App() {
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
           <MapBounds markers={filteredHawkers} />
           
-          {viewMode === 'regions' && Object.entries(regionBoundaries).map(([name, data]) => (
+          {showBoundaries && Object.entries(regionBoundaries).map(([name, data]) => (
             <Polygon key={name} positions={data.coords} pathOptions={{ color: data.color, fillColor: data.color, fillOpacity: 0.15, weight: 3 }} />
           ))}
 
           <LayersControl position="topright">
             {Object.entries(groupedHawkers).map(([region, centres]) => (
-              <LayersControl.Overlay checked name={`${region} (${centres.length})`} key={region}>
+              <LayersControl.Overlay 
+                checked={activeRegions.includes(region)} 
+                name={`${region} (${centres.length})`} 
+                key={region}
+                eventHandlers={{
+                  add: () => setActiveRegions(prev => [...prev, region]),
+                  remove: () => setActiveRegions(prev => prev.filter(r => r !== region))
+                }}
+              >
                 <FeatureGroup>
-                  {/* FIX: disableClusteringAtZoom is 0 for Pins/Density/Regions to show ALL markers immediately */}
                   <MarkerClusterGroup 
                     disableClusteringAtZoom={viewMode === 'cluster' ? 17 : 0} 
                     chunkedLoading 
-                    key={`${viewMode}-${centres.length}`}
+                    key={`${viewMode}-${centres.length}-${activeRegions.length}`}
                   >
                     {centres.map((hawker, index) => {
                       const p = hawker.properties;
@@ -167,11 +198,19 @@ function App() {
 
         {selectedIds.length > 0 && (
           <div className="bg-white border-t border-gray-300 p-3 max-h-32 overflow-y-auto z-[3000] shadow-2xl">
-            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 px-1 flex justify-between">Selected Centres ({selectedIds.length}) <button onClick={() => setSelectedIds([])} className="text-red-500 hover:underline">Clear</button></h3>
+            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 px-1 flex justify-between">
+              Selected Centres ({selectedIds.length}) 
+              <button 
+                onClick={() => {setSelectedIds([]); setShowOnlySelected(false);}} 
+                className="text-red-600 hover:text-red-800 font-bold border border-red-200 px-2 py-0.5 rounded bg-red-50 text-[9px]"
+              >
+                CLEAR ALL SELECTIONS
+              </button>
+            </h3>
             <div className="flex flex-wrap gap-2">
               {selectedIds.map(name => (
                 <div key={name} className="bg-blue-600 text-white px-3 py-1 rounded-full text-[10px] flex items-center gap-2 font-bold shadow-sm">
-                  {name}<button onClick={() => toggleSelection(name)} className="hover:text-red-200">×</button>
+                  {name}<button onClick={() => toggleSelection(name)} className="hover:text-red-200 text-sm leading-none">&times;</button>
                 </div>
               ))}
             </div>
