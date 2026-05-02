@@ -16,6 +16,16 @@ let DefaultIcon = L.icon({
   iconSize: [25, 41],
   iconAnchor: [12, 41]
 });
+
+// NEW: Highlighted Pin setup (Red color via CSS filter)
+const SelectedPinIcon = L.icon({
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  className: 'hue-rotate-[140deg] brightness-110 drop-shadow-md'
+});
+
 L.Marker.prototype.options.icon = DefaultIcon;
 
 // Auto-Zoom Component
@@ -33,13 +43,15 @@ function MapBounds({ markers }) {
   return null;
 }
 
-// Dynamic Bubble Icon Generator
-const getCustomIcon = (stalls, isNew) => {
+// Dynamic Bubble Icon Generator (Updated to handle isSelected)
+const getCustomIcon = (stalls, isNew, isSelected) => {
   const size = Math.max(24, Math.min(75, 20 + (stalls * 0.25))); 
   const bgClass = isNew ? 'bg-amber-500' : 'bg-blue-600';
+  // Add a red ring if selected
+  const borderClass = isSelected ? 'border-[4px] border-red-500 ring-2 ring-white' : 'border-[3px] border-white';
   
   const htmlString = `
-    <div class="${bgClass} rounded-full border-[3px] border-white shadow-lg flex items-center justify-center opacity-90 transition-transform hover:scale-110" style="width: ${size}px; height: ${size}px;">
+    <div class="${bgClass} ${borderClass} rounded-full shadow-lg flex items-center justify-center opacity-90 transition-all hover:scale-110" style="width: ${size}px; height: ${size}px;">
       <span class="text-white font-bold" style="font-size: ${Math.max(9, size / 3.5)}px;">
         ${stalls > 0 ? stalls : ''}
       </span>
@@ -85,9 +97,9 @@ const HawkerCard = ({ props, address, status, isNew }) => (
 function App() {
   const [hawkers, setHawkers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  
-  // NEW STATE: Toggle between map views
   const [viewMode, setViewMode] = useState('density'); 
+  // NEW STATE: track multiple selected hawkers by name
+  const [selectedIds, setSelectedIds] = useState([]);
 
   useEffect(() => {
     fetch('/hawkers.json')
@@ -113,13 +125,11 @@ function App() {
   const getRegion = (postal) => {
     if (!postal) return "Central Area";
     const sector = parseInt(postal.toString().substring(0, 2), 10);
-    
     if (sector >= 1 && sector <= 33) return "South & Central Area";
     if (sector >= 34 && sector <= 52) return "East Area";
     if (sector >= 58 && sector <= 71) return "West Area";
     if (sector >= 72 && sector <= 78) return "North Area";
     if ((sector >= 53 && sector <= 57) || (sector >= 79 && sector <= 82)) return "North-East Area";
-    
     return "Central Area";
   };
 
@@ -139,6 +149,13 @@ function App() {
     return acc;
   }, {});
 
+  // Toggle selection function
+  const toggleSelection = (name) => {
+    setSelectedIds(prev => 
+      prev.includes(name) ? prev.filter(id => id !== name) : [...prev, name]
+    );
+  };
+
   return (
     <div className="h-screen w-screen flex flex-col font-sans bg-gray-100 overflow-hidden">
       <header className="p-4 bg-white shadow-md sticky top-0 z-[2000] flex flex-col lg:flex-row gap-4 items-center justify-between" style={{ zIndex: 2000 }}>
@@ -147,7 +164,6 @@ function App() {
           <p className="text-xs text-gray-500">Visualizing {filteredHawkers.length} locations.</p>
         </div>
         
-        {/* Updated Header Layout: Search Bar + View Toggle */}
         <div className="w-full lg:w-auto flex flex-col sm:flex-row gap-2">
           <input
             type="text"
@@ -166,8 +182,8 @@ function App() {
         </div>
       </header>
 
-      <div className="flex-1 relative">
-        <MapContainer center={[1.3521, 103.8198]} zoom={12} className="h-full w-full z-10" style={{ height: "100%", width: "100%" }}>
+      <div className="flex-1 relative flex flex-col overflow-hidden">
+        <MapContainer center={[1.3521, 103.8198]} zoom={12} className="flex-1 w-full z-10">
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap' />
           
           <MapBounds markers={filteredHawkers} />
@@ -185,16 +201,20 @@ function App() {
                     
                     const status = props.STATUS || "Existing";
                     const isNew = status.toLowerCase().includes("construction") || status.toLowerCase().includes("new");
-
-                    {/* Logic to determine which icon to show based on the toggle */}
                     const isDensityView = viewMode === 'density';
+                    
+                    // NEW: Check if this marker is selected
+                    const isSelected = selectedIds.includes(props.NAME);
 
                     return (
                       <Marker 
                         key={`${region}-${index}`} 
                         position={position} 
-                        icon={isDensityView ? getCustomIcon(stalls, isNew) : DefaultIcon}
-                        opacity={!isDensityView && isNew ? 0.6 : 1.0} // Add fade to default pins if new
+                        icon={isDensityView ? getCustomIcon(stalls, isNew, isSelected) : (isSelected ? SelectedPinIcon : DefaultIcon)}
+                        opacity={!isDensityView && isNew ? 0.6 : 1.0}
+                        eventHandlers={{
+                          click: () => toggleSelection(props.NAME)
+                        }}
                       >
                         <Tooltip direction="top" opacity={1}>
                           <HawkerCard props={props} address={address} status={status} isNew={isNew} />
@@ -210,6 +230,24 @@ function App() {
             ))}
           </LayersControl>
         </MapContainer>
+
+        {/* NEW: Bottom List for Selected Centres */}
+        {selectedIds.length > 0 && (
+          <div className="bg-white border-t border-gray-300 p-4 max-h-40 overflow-y-auto z-[3000] shadow-2xl">
+            <h3 className="text-sm font-bold mb-2 text-gray-700 flex justify-between items-center">
+              Selected Centres ({selectedIds.length})
+              <button onClick={() => setSelectedIds([])} className="text-[10px] text-red-500 hover:underline">Clear All</button>
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {selectedIds.map(name => (
+                <div key={name} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs flex items-center gap-2 border border-blue-200">
+                  {name}
+                  <button onClick={() => toggleSelection(name)} className="font-bold hover:text-red-600 px-1">×</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
