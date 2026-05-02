@@ -19,13 +19,11 @@ function App() {
 
   const filteredHawkers = useMemo(() => {
     return hawkers.filter(item => {
-      const p = item.properties || {};
-      if (showOnlySelected) return selectedIds.includes(p.NAME);
-      const address = p.ADDRESS_MYENV || `${p.ADDRESSBLOCKHOUSENUMBER} ${p.ADDRESSSTREETNAME}`;
+      const props = item.properties || {};
+      if (showOnlySelected) return selectedIds.includes(props.NAME);
+      const address = props.ADDRESS_MYENV || `${props.ADDRESSBLOCKHOUSENUMBER} ${props.ADDRESSSTREETNAME}`;
       const term = searchTerm.toLowerCase();
-      return (p.NAME || "").toLowerCase().includes(term) || 
-             (p.ADDRESSPOSTALCODE || "").toLowerCase().includes(term) || 
-             address.toLowerCase().includes(term);
+      return (props.NAME || "").toLowerCase().includes(term) || (props.ADDRESSPOSTALCODE || "").toLowerCase().includes(term) || address.toLowerCase().includes(term);
     });
   }, [hawkers, searchTerm, showOnlySelected, selectedIds]);
 
@@ -78,6 +76,7 @@ function App() {
           showBoundaries={showBoundaries}
           activeRegions={activeRegions}
           setActiveRegions={setActiveRegions}
+          showOnlySelected={showOnlySelected}
         />
 
         <SelectionPanel 
