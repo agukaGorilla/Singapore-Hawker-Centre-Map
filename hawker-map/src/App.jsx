@@ -16,18 +16,23 @@ let DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// Automatically fits the map to show all visible markers perfectly
 function MapBounds({ markers }) {
   const map = useMap();
+  
   useEffect(() => {
-    if (markers.length > 0) {
+    if (markers.length === 1) {
+      const coords = markers[0].geometry?.coordinates || [0,0];
+      const position = [coords[1], coords[0]];
+      map.flyTo(position, 16, { animate: true, duration: 1.5 });
+    } else if (markers.length > 1) {
       const bounds = L.latLngBounds(markers.map(m => {
         const coords = m.geometry?.coordinates || [0,0];
         return [coords[1], coords[0]];
       }));
-      map.fitBounds(bounds, { padding: [20, 20] });
+      map.fitBounds(bounds, { padding: [20, 20], maxZoom: 13 });
     }
   }, [markers, map]);
+  
   return null;
 }
 
