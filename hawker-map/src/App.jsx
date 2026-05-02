@@ -9,7 +9,6 @@ import L from 'leaflet';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
-// Standard Leaflet Pin setup
 let DefaultIcon = L.icon({
   iconUrl: markerIcon,
   shadowUrl: markerShadow,
@@ -17,7 +16,6 @@ let DefaultIcon = L.icon({
   iconAnchor: [12, 41]
 });
 
-// NEW: Highlighted Pin setup (Red color via CSS filter)
 const SelectedPinIcon = L.icon({
   iconUrl: markerIcon,
   shadowUrl: markerShadow,
@@ -28,7 +26,6 @@ const SelectedPinIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// Auto-Zoom Component
 function MapBounds({ markers }) {
   const map = useMap();
   useEffect(() => {
@@ -43,11 +40,9 @@ function MapBounds({ markers }) {
   return null;
 }
 
-// Dynamic Bubble Icon Generator (Updated to handle isSelected)
 const getCustomIcon = (stalls, isNew, isSelected) => {
   const size = Math.max(24, Math.min(75, 20 + (stalls * 0.25))); 
   const bgClass = isNew ? 'bg-amber-500' : 'bg-blue-600';
-  // Add a red ring if selected
   const borderClass = isSelected ? 'border-[4px] border-red-500 ring-2 ring-white' : 'border-[3px] border-white';
   
   const htmlString = `
@@ -67,7 +62,6 @@ const getCustomIcon = (stalls, isNew, isSelected) => {
   });
 };
 
-// Unified Hawker Card
 const HawkerCard = ({ props, address, status, isNew }) => (
   <div className="p-1 w-64 flex flex-col gap-1.5 whitespace-normal overflow-hidden">
     {props.PHOTOURL && (
@@ -98,8 +92,10 @@ function App() {
   const [hawkers, setHawkers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('density'); 
-  // NEW STATE: track multiple selected hawkers by name
   const [selectedIds, setSelectedIds] = useState([]);
+  
+  // NEW: State for "Only Selected" toggle
+  const [showOnlySelected, setShowOnlySelected] = useState(false);
 
   useEffect(() => {
     fetch('/hawkers.json')
@@ -107,13 +103,7 @@ function App() {
       .then(data => setHawkers(data.features || data));
   }, []);
 
-  if (hawkers.length === 0) {
-    return (
-      <div className="h-screen w-screen flex items-center justify-center bg-gray-100">
-        <p className="text-xl font-bold text-gray-500 animate-pulse">Loading Singapore Hawker Centres...</p>
-      </div>
-    );
-  }
+  if (hawkers.length === 0) return null;
 
   const getAddress = (props) => {
     const addressEnv = props.ADDRESS_MYENV;
@@ -135,6 +125,12 @@ function App() {
 
   const filteredHawkers = hawkers.filter(item => {
     const props = item.properties || {};
+    
+    // NEW: Apply the "Only Selected" filter first if active
+    if (showOnlySelected) {
+      return selectedIds.includes(props.NAME);
+    }
+
     const address = getAddress(props);
     const term = searchTerm.toLowerCase();
     return (props.NAME || "").toLowerCase().includes(term) || 
@@ -149,7 +145,6 @@ function App() {
     return acc;
   }, {});
 
-  // Toggle selection function
   const toggleSelection = (name) => {
     setSelectedIds(prev => 
       prev.includes(name) ? prev.filter(id => id !== name) : [...prev, name]
@@ -164,20 +159,33 @@ function App() {
           <p className="text-xs text-gray-500">Visualizing {filteredHawkers.length} locations.</p>
         </div>
         
-        <div className="w-full lg:w-auto flex flex-col sm:flex-row gap-2">
+        <div className="w-full lg:w-auto flex flex-col sm:flex-row gap-3 items-center">
+          {/* NEW: Toggle Switch UI */}
+          <label className="flex items-center cursor-pointer gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">
+            <span className="text-xs font-bold text-gray-600">Only Selected</span>
+            <input 
+              type="checkbox" 
+              className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
+              checked={showOnlySelected}
+              onChange={(e) => setShowOnlySelected(e.target.checked)}
+            />
+          </label>
+
           <input
             type="text"
             placeholder="Search by name, address, or postal code..."
-            className="w-full sm:w-80 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+            className="w-full sm:w-64 p-2 border border-gray-300 rounded-lg outline-none text-sm focus:ring-2 focus:ring-blue-500"
+            disabled={showOnlySelected} // Disable search when "Only Selected" is on
             onChange={(e) => setSearchTerm(e.target.value)}
           />
+          
           <select 
-            className="w-full sm:w-48 p-2 border border-gray-300 rounded-lg bg-white text-sm focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer font-medium text-gray-700"
+            className="w-full sm:w-40 p-2 border border-gray-300 rounded-lg bg-white text-sm focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer"
             value={viewMode}
             onChange={(e) => setViewMode(e.target.value)}
           >
-            <option value="density">🔴 Density (Bubbles)</option>
-            <option value="pins">📍 Locations (Pins)</option>
+            <option value="density">🔴 Density</option>
+            <option value="pins">📍 Pins</option>
           </select>
         </div>
       </header>
@@ -185,7 +193,6 @@ function App() {
       <div className="flex-1 relative flex flex-col overflow-hidden">
         <MapContainer center={[1.3521, 103.8198]} zoom={12} className="flex-1 w-full z-10">
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap' />
-          
           <MapBounds markers={filteredHawkers} />
 
           <LayersControl position="topright">
@@ -198,12 +205,9 @@ function App() {
                     const position = [coords[1], coords[0]]; 
                     const address = getAddress(props);
                     const stalls = props.NUMBER_OF_COOKED_FOOD_STALLS || 0;
-                    
                     const status = props.STATUS || "Existing";
                     const isNew = status.toLowerCase().includes("construction") || status.toLowerCase().includes("new");
                     const isDensityView = viewMode === 'density';
-                    
-                    // NEW: Check if this marker is selected
                     const isSelected = selectedIds.includes(props.NAME);
 
                     return (
@@ -212,9 +216,7 @@ function App() {
                         position={position} 
                         icon={isDensityView ? getCustomIcon(stalls, isNew, isSelected) : (isSelected ? SelectedPinIcon : DefaultIcon)}
                         opacity={!isDensityView && isNew ? 0.6 : 1.0}
-                        eventHandlers={{
-                          click: () => toggleSelection(props.NAME)
-                        }}
+                        eventHandlers={{ click: () => toggleSelection(props.NAME) }}
                       >
                         <Tooltip direction="top" opacity={1}>
                           <HawkerCard props={props} address={address} status={status} isNew={isNew} />
@@ -231,12 +233,11 @@ function App() {
           </LayersControl>
         </MapContainer>
 
-        {/* NEW: Bottom List for Selected Centres */}
         {selectedIds.length > 0 && (
           <div className="bg-white border-t border-gray-300 p-4 max-h-40 overflow-y-auto z-[3000] shadow-2xl">
             <h3 className="text-sm font-bold mb-2 text-gray-700 flex justify-between items-center">
               Selected Centres ({selectedIds.length})
-              <button onClick={() => setSelectedIds([])} className="text-[10px] text-red-500 hover:underline">Clear All</button>
+              <button onClick={() => {setSelectedIds([]); setShowOnlySelected(false);}} className="text-[10px] text-red-500 hover:underline">Clear All</button>
             </h3>
             <div className="flex flex-wrap gap-2">
               {selectedIds.map(name => (
